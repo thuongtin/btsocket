@@ -150,6 +150,7 @@ func (this *Bittrex) msgListener()  {
 			_, message, err := this.socket.ReadMessage()
 			if err != nil {
 				log.Println("read:", err)
+				this.socket.Close()
 				return
 			}
 			this.serverMessage <- message
@@ -163,6 +164,7 @@ func (this *Bittrex) scanServerMessage() {
 		msg := <- this.serverMessage
 		serverMessage := ServerMessage{}
 		json.Unmarshal(msg, &serverMessage)
+
 
 
 		if len(serverMessage.Identifier) > 0 {
@@ -207,6 +209,7 @@ func (this *Bittrex) ping() {
 		if err != nil {
 			this.socket.Close()
 			this.Connect()
+			break
 		}
 		time.Sleep(time.Second * 5)
 	}
