@@ -1,8 +1,9 @@
 package bittrex
 
+import "encoding/json"
+
 type ExchangeState struct {
 	MarketName string   `json:"MarketName"`
-	Nounce     int      `json:"Nounce"`
 	Buys       []OrderBook  `json:"Buys"`
 	Sells      []OrderBook  `json:"Sells"`
 	Fills      []OrderHistory   `json:"Fills"`
@@ -41,5 +42,38 @@ type MarketSummary struct {
 	PrevDay        float64 `json:"PrevDay"`
 	TimeStamp      string  `json:"TimeStamp"`
 	Volume         float64 `json:"Volume"`
-	UnixTime		int64
+}
+
+type Negotiate struct {
+	Url                     string
+	ConnectionToken         string
+	ConnectionId            string
+	KeepAliveTimeout        float32
+	DisconnectTimeout       float32
+	ConnectionTimeout       float32
+	TryWebSockets           bool
+	ProtocolVersion         string
+	TransportConnectTimeout float32
+	LogPollDelay            float32
+}
+
+type Request struct {
+	Hub        string        `json:"H"`
+	Method     string        `json:"M"`
+	Arguments  []string      `json:"A"`
+	Identifier int           `json:"I"`
+}
+
+type Response struct {
+	Hub        string        `json:"H"`
+	Method     string        `json:"M"`
+	Arguments  []json.RawMessage `json:"A"`
+}
+
+type ServerMessage struct {
+	Cursor     string            `json:"C"`
+	Data       []Response		 `json:"M"`
+	Result     json.RawMessage   `json:"R"`
+	Identifier string            `json:"I"`
+	Error      string            `json:"E"`
 }
