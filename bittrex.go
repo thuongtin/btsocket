@@ -205,12 +205,14 @@ func (this *Bittrex) Close() {
 
 func (this *Bittrex) ping() {
 	for {
+		this.mutex.Lock()
 		err := this.socket.WriteMessage(websocket.TextMessage, []byte("ping"))
 		if err != nil {
 			this.socket.Close()
 			this.Connect()
 			break
 		}
+		this.mutex.Unlock()
 		time.Sleep(time.Second * 5)
 	}
 }
