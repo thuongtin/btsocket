@@ -32,6 +32,7 @@ type Bittrex struct {
 
 func (this Bittrex) NewClient() *Bittrex {
 	resty := resty.SetTimeout(5 * time.Second)
+	resty.SetHeader("User-Agent", `Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:55.0) Gecko/20100101 Firefox/55.0`)
 	resty.Debug = false
 	serverMessage := make(chan []byte)
 	return &Bittrex{r: resty.R(),
@@ -59,7 +60,11 @@ func (this *Bittrex) getNegotiate() (Negotiate, error)  {
 func (this *Bittrex) Connect()  {
 	negotiate, err := this.getNegotiate()
 	if err != nil {
-		panic(err)
+		if this.AutoReconnect {
+			this.Connect()
+		} else {
+			panic(err)
+		}
 	}
 	go this.scanServerMessage()
 	this.connectWebsocket(negotiate)
