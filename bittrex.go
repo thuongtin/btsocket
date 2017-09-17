@@ -135,9 +135,14 @@ func (this *Bittrex) connectWebsocket(negotiation Negotiate) error {
 	u.RawQuery = connectionParameters.Encode()
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
-		log.Fatal("dial:", err)
-		return err
+		if this.AutoReconnect {
+			this.Connect()
+		} else {
+			log.Fatal("dial:", err)
+			return err
+		}
 	}
+
 	this.socket = c
 	go this.msgListener()
 	if this.AutoReconnect {
