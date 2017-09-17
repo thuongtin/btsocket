@@ -61,13 +61,22 @@ func (this *Bittrex) Connect()  {
 	negotiate, err := this.getNegotiate()
 	if err != nil {
 		if this.AutoReconnect {
+			fmt.Printf("Reconnecting...")
 			this.Connect()
 		} else {
 			panic(err)
 		}
 	}
 	go this.scanServerMessage()
-	this.connectWebsocket(negotiate)
+	error := this.connectWebsocket(negotiate)
+	if error != nil {
+		if this.AutoReconnect {
+			fmt.Printf("Reconnecting...")
+			this.Connect()
+		} else {
+			panic(err)
+		}
+	}
 }
 
 func (this *Bittrex) SubscribeToExchangeDeltas(pair string) (error) {
@@ -135,12 +144,7 @@ func (this *Bittrex) connectWebsocket(negotiation Negotiate) error {
 	u.RawQuery = connectionParameters.Encode()
 	c, _, err := websocket.DefaultDialer.Dial(u.String(), header)
 	if err != nil {
-		if this.AutoReconnect {
-			this.Connect()
-		} else {
-			log.Fatal("dial:", err)
-			return err
-		}
+		return err
 	}
 
 	this.socket = c
