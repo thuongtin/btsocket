@@ -31,7 +31,7 @@ type Bittrex struct {
 }
 
 func (this Bittrex) NewClient() *Bittrex {
-	resty := resty.SetTimeout(5 * time.Second)
+	resty := resty.SetTimeout(10 * time.Second)
 	resty.SetHeader("User-Agent", `Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:55.0) Gecko/20100101 Firefox/55.0`)
 	resty.Debug = false
 	serverMessage := make(chan []byte)
@@ -61,22 +61,25 @@ func (this *Bittrex) Connect()  {
 	negotiate, err := this.getNegotiate()
 	if err != nil {
 		if this.AutoReconnect {
-			fmt.Printf("Reconnecting...")
+			fmt.Printf("getNegotiate error. Reconnecting...")
 			this.Connect()
+			return
+		} else {
+			panic(err)
+		}
+	}
+
+	error := this.connectWebsocket(negotiate)
+	if error != nil {
+		if this.AutoReconnect {
+			fmt.Println("connectWebsocket error. Reconnecting...")
+			this.Connect()
+			return
 		} else {
 			panic(err)
 		}
 	}
 	go this.scanServerMessage()
-	error := this.connectWebsocket(negotiate)
-	if error != nil {
-		if this.AutoReconnect {
-			fmt.Printf("Reconnecting...")
-			this.Connect()
-		} else {
-			panic(err)
-		}
-	}
 }
 
 func (this *Bittrex) SubscribeToExchangeDeltas(pair string) (error) {
