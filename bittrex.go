@@ -27,7 +27,7 @@ type Bittrex struct {
 	OnUpdateSummaryState func(marketSummaries []MarketSummary)
 	OnUpdateExchangeState func(exchangeState ExchangeState)
 	OnUpdateAllExchangeState func(exchangeState ExchangeState)
-	OnReconnected func()
+	OnConnected func()
 	AutoReconnect bool
 }
 
@@ -81,6 +81,11 @@ func (this *Bittrex) Connect()  {
 		}
 	}
 	go this.scanServerMessage()
+
+	if this.OnConnected != nil {
+		this.OnConnected()
+	}
+
 }
 
 func (this *Bittrex) SubscribeToExchangeDeltas(pair string) (error) {
@@ -228,11 +233,10 @@ func (this *Bittrex) ping() {
 			this.mutex.Lock()
 			err := this.socket.WriteMessage(websocket.TextMessage, []byte("ping"))
 			if err != nil {
+				ticker.Stop()
 				this.socket.Close()
 				go this.Connect()
 				this.mutex.Unlock()
-				ticker.Stop()
-				break
 			}
 			this.mutex.Unlock()
 		}
