@@ -27,6 +27,7 @@ type Bittrex struct {
 	OnUpdateSummaryState func(marketSummaries []MarketSummary)
 	OnUpdateExchangeState func(exchangeState ExchangeState)
 	OnUpdateAllExchangeState func(exchangeState ExchangeState)
+	OnReconnected func()
 	AutoReconnect bool
 }
 
@@ -61,7 +62,7 @@ func (this *Bittrex) Connect()  {
 	negotiate, err := this.getNegotiate()
 	if err != nil {
 		if this.AutoReconnect {
-			fmt.Printf("getNegotiate error. Reconnecting...")
+			fmt.Printf("getNegotiate error. Reconnecting...\n")
 			this.Connect()
 			return
 		} else {
@@ -72,7 +73,7 @@ func (this *Bittrex) Connect()  {
 	error := this.connectWebsocket(negotiate)
 	if error != nil {
 		if this.AutoReconnect {
-			fmt.Println("connectWebsocket error. Reconnecting...")
+			fmt.Println("connectWebsocket error. Reconnecting...\n")
 			this.Connect()
 			return
 		} else {
@@ -221,15 +222,19 @@ func (this *Bittrex) Close() {
 }
 
 func (this *Bittrex) ping() {
-	for {
-		this.mutex.Lock()
-		err := this.socket.WriteMessage(websocket.TextMessage, []byte("ping"))
-		if err != nil {
-			this.socket.Close()
-			this.Connect()
-			break
+	ticker := time.NewTicker(time.Second * 5)
+	go func() {
+		for ; true; <-ticker.C {
+			this.mutex.Lock()
+			err := this.socket.WriteMessage(websocket.TextMessage, []byte("ping"))
+			if err != nil {
+				this.socket.Close()
+				go this.Connect()
+				this.mutex.Unlock()
+				ticker.Stop()
+				break
+			}
+			this.mutex.Unlock()
 		}
-		this.mutex.Unlock()
-		time.Sleep(time.Second * 5)
-	}
+	}()
 }
