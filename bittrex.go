@@ -237,6 +237,7 @@ func (this *Bittrex) ping() {
 				this.socket.Close()
 				go this.Connect()
 				this.mutex.Unlock()
+				break
 			}
 			this.mutex.Unlock()
 		}
