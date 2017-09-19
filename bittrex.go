@@ -189,9 +189,6 @@ func (this *Bittrex) scanServerMessage() {
 		msg := <- this.serverMessage
 		serverMessage := ServerMessage{}
 		json.Unmarshal(msg, &serverMessage)
-
-
-
 		if len(serverMessage.Identifier) > 0 {
 			if pair, ok := this.waitingQueryExchangeStateResponses[serverMessage.Identifier]; ok {
 				defer delete(this.waitingQueryExchangeStateResponses, serverMessage.Identifier)
