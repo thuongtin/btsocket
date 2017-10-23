@@ -3,13 +3,13 @@ package bittrex
 import (
 	"github.com/gorilla/websocket"
 	"net/url"
-	"github.com/go-resty/resty"
 	"time"
 	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
 	"fmt"
+	"io/ioutil"
 )
 const (
 	BITTREX_HOST = "socket.bittrex.com"
@@ -19,7 +19,7 @@ const (
 type Bittrex struct {
 	mutex sync.Mutex
 	socket *websocket.Conn
-	r *resty.Request
+	sc *Transport
 	nextId int
 	serverMessage chan []byte
 	waitingQueryExchangeStateResponses map[string]string
@@ -33,11 +33,9 @@ type Bittrex struct {
 }
 
 func (this Bittrex) NewClient() *Bittrex {
-	resty := resty.SetTimeout(10 * time.Second)
-	resty.SetHeader("User-Agent", `Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:55.0) Gecko/20100101 Firefox/55.0`)
-	resty.Debug = false
+	scap, _ := NewTransport(http.DefaultTransport)
 	serverMessage := make(chan []byte)
-	return &Bittrex{r: resty.R(),
+	return &Bittrex{sc: scap,
 	nextId: 1,
 	serverMessage: serverMessage,
 	AutoReconnect: true,
@@ -48,11 +46,18 @@ func (this Bittrex) NewClient() *Bittrex {
 func (this *Bittrex) getNegotiate() (Negotiate, error)  {
 	var response Negotiate
 	url := url.URL{Scheme: "https", Host: BITTREX_HOST, Path: "/signalr/negotiate"}
-	resp, err := this.r.Get(url.String())
+
+	c := http.Client{Transport: this.sc}
+	res, err := c.Get(url.String())
 	if err != nil {
 		return response, err
 	}
-	if err := json.Unmarshal(resp.Body(), &response); err != nil {
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return response, err
+	}
+	if err := json.Unmarshal(body, &response); err != nil {
 		return response, err
 	} else {
 		return response, nil
